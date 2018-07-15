@@ -9,6 +9,8 @@ from bidir_similarity import BiSimilarity
 from similarity import SimilarityModel
 from attention import Attention
 
+import matplotlib.pyplot as plt
+
 
 DATA_PATH = "../../raw_data/quora_datasets/tokenized/all.txt"
 TRAIN_PATH = "../../raw_data/quora_datasets/tokenized/train.txt"
@@ -32,7 +34,7 @@ class Config:
     dropout = 0.5
     embed_size = 300 # word vector dimensions
     output_size = 50
-    n_epochs = 100
+    n_epochs = 10
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
@@ -372,7 +374,7 @@ if __name__ == "__main__":
             best_dev_accuracy, dev_f1, test_accuracy, test_f1 = model.fit(session, saver, train, dev, test)
             print("best dev accuracy: %f, dev f1: %f, test accuracy: %f, test f1: %f" % (best_dev_accuracy, dev_f1, test_accuracy, test_f1))
 
-            with open("../../results/model_results.csv", 'a') as f:
+            with open("model_results.csv", 'a') as f:
                 fieldnames = ["cell", "distance_measure", "augment_data", "regularization_constant", "hidden_size", "max_length", "best_dev_accuracy", "dev_f1", "test_accuracy", "test_f1"]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
 
