@@ -14,7 +14,7 @@ import pdb
 import pickle
 import csv
 
-class SimilarityModel(Model):
+class BiSimilarity(Model):
     def __init__(self, helper, config, embeddings, report=None):
         self.helper = helper
         self.config = config
@@ -169,25 +169,46 @@ class SimilarityModel(Model):
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         # Initialize hidden states to zero vectors of shape (num_examples, hidden_size)
-        h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
-        h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
+        h1_f = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
+        h1_b = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
+        h2_f = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
+        h2_b = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
 
-        with tf.variable_scope("RNN1") as scope:
+        W = tf.get_variable(name="W", shape=[2*self.config.hidden_size, self.config.hidden_size], dtype=tf.float32,initializer=tf.contrib.layers.xavier_initializer())
+        b = tf.get_variable(name="b_bi", shape=[self.config.hidden_size], dtype=tf.float32,initializer=tf.constant_initializer(0))
+
+        with tf.variable_scope("RNN1_F") as scope:
             for time_step in range(self.helper.max_length):
-                if time_step != 0:
+                if time_step > 0:
                     scope.reuse_variables()
-                o1_t, h1 = cell(x1[:, time_step, :], h1, scope)
-        with tf.variable_scope("RNN2") as scope:
+
+                o1_f, h1_f = cell(x1[:, time_step, :], h1_f, scope)
+
+        with tf.variable_scope("RNN1_B") as scope:
             for time_step in range(self.helper.max_length):
-                if time_step != 0:
+                if time_step > 0:
                     scope.reuse_variables()
-                o2_t, h2 = cell(x2[:, time_step, :], h2, scope)
+                o1_b, h1_b = cell(x1[:, self.helper.max_length - time_step -1, :], h1_b, scope)
+
+        with tf.variable_scope("RNN2_F") as scope:
+            for time_step in range(self.helper.max_length):
+                if time_step > 0:
+                    scope.reuse_variables()
+                o2_f, h2_f = cell(x2[:, time_step, :], h2_f, scope)
+
+        with tf.variable_scope("RNN2_B") as scope:
+            for time_step in range(self.helper.max_length):
+                if time_step > 0:
+                    scope.reuse_variables()
+                o2_b, h2_b = cell(x2[:, self.helper.max_length - time_step -1, :], h2_b, scope)
+
+        h1 = tf.tanh(tf.matmul(tf.concat([h1_f, h1_b], 1), W) + b)
+        h2 = tf.tanh(tf.matmul(tf.concat([h2_f, h2_b], 1), W) + b)
 
         # h_drop1 = tf.nn.dropout(h1, dropout_rate)
         # h_drop2 = tf.nn.dropout(h2, dropout_rate)
 
         # use L2-regularization: sum of squares of all parameters
-
         if self.config.distance_measure == "l2":
             # perform logistic regression on l2-distance between h1 and h2
             distance = norm(h1 - h2 + 0.000001)
@@ -551,7 +572,7 @@ class SimilarityModel(Model):
             prog.update(i+1)
 
         # here we have a list of predictions
-        with open('../../final.csv', 'w') as csvfile:
+        with open('../../results/final.csv', 'w') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['test_id', 'is_duplicate'])
             for i in range(len(preds)):
