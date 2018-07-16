@@ -520,7 +520,7 @@ class BiSimilarity(Model):
 
         # save results to pickle
         results_dir = "../../results/"
-        filename = "model_a_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.pkl" % (int(self.config.augment_data), self.config.cell,
+        filename = "bidir_model_a_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.pickle" % (int(self.config.augment_data), self.config.cell,
             self.config.distance_measure, self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
         save_path = os.path.join(results_dir, filename)
         with open(save_path, 'wb') as f:
