@@ -9,7 +9,7 @@ from bidir_similarity import BiSimilarity
 from similarity import SimilarityModel
 from attention import Attention
 
-import matplotlib.pyplot as plt
+
 
 
 DATA_PATH = "../../raw_data/quora_datasets/tokenized/all.txt"
@@ -34,7 +34,7 @@ class Config:
     dropout = 0.5
     embed_size = 300 # word vector dimensions
     output_size = 50
-    n_epochs = 10
+    n_epochs = 3
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
@@ -359,10 +359,11 @@ if __name__ == "__main__":
     with tf.Graph().as_default():
         print("Building model...")
         start = time.time()
-        if config.bidir == False:
-            model = SimilarityModel(helper, config, embeddings)
-        else:
-            model = BiSimilarity(helper, config, embeddings)
+        with tf.device('/gpu:2'):
+            if config.bidir == False:
+                model = SimilarityModel(helper, config, embeddings)
+            else:
+                model = BiSimilarity(helper, config, embeddings)
         print("took %.2f seconds" % (time.time() - start))
 
         init = tf.global_variables_initializer()

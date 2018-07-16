@@ -14,6 +14,8 @@ import pdb
 import pickle
 import csv
 
+import matplotlib.pyplot as plt
+
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):
         self.helper = helper
@@ -441,7 +443,13 @@ class SimilarityModel(Model):
         Returns:
             best training loss over the self.config.n_epochs of training
         """
-        # unpack data
+
+
+
+
+        # unpack data1
+
+
         train_examples = self.preprocess_sequence_data(train_examples_raw)
         dev_set = self.preprocess_sequence_data(dev_set_raw)
         test_set = self.preprocess_sequence_data(test_set_raw)
@@ -498,17 +506,44 @@ class SimilarityModel(Model):
                     print("Model saved in file: %s" % save_path)
 
         # save results to pickle
-        results_dir = "../../results/"
-        filename = "model_a_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.pkl" % (int(self.config.augment_data), self.config.cell,
+        results_dir = "./results/"
+        filename = "model_a_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.png" % (int(self.config.augment_data), self.config.cell,
             self.config.distance_measure, self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
         save_path = os.path.join(results_dir, filename)
-        with open(save_path, 'wb') as f:
-            pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
+        # with open(save_path, 'wb') as f:
+            # pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         # calculate other relevant scores
         dev_accuracy_f1 = results["dev"]["f1"][best_dev_accuracy_epoch]
         test_accuracy = results["test"]["accuracy"][best_dev_accuracy_epoch]
         test_f1 = results["test"]["f1"][best_dev_accuracy_epoch]
+
+        # plot and save
+        xs = np.array(range(self.config.n_epochs))
+
+        plt.subplot(211)
+        plt.title('f1')
+        ys = results["dev"]["f1"]
+        plt.plot(xs, ys, 'C1', label="dev")
+        ys = results["train"]["f1"]
+        plt.plot(xs, ys, 'C2', label="train")
+        ys = results["test"]["f1"]
+        plt.plot(xs, ys, 'C3', label="test")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+        plt.subplot(212)
+        plt.title('accuracy')
+        ys = results["dev"]["accuracy"]
+        plt.plot(xs, ys, 'C1', label="dev")
+        ys = results["train"]["accuracy"]
+        plt.plot(xs, ys, 'C2', label="train")
+        ys = results["test"]["accuracy"]
+        plt.plot(xs, ys, 'C3', label="test")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        
+
+        plt.savefig(save_path)
+
 
         return best_dev_accuracy, dev_accuracy_f1, test_accuracy, test_f1
 
