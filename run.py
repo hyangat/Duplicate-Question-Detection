@@ -375,7 +375,11 @@ if __name__ == "__main__":
             best_dev_accuracy, dev_f1, test_accuracy, test_f1 = model.fit(session, saver, train, dev, test)
             print("best dev accuracy: %f, dev f1: %f, test accuracy: %f, test f1: %f" % (best_dev_accuracy, dev_f1, test_accuracy, test_f1))
 
-            with open("model_results.csv", 'a') as f:
+            results_file_name = "model_results.csv"
+            if args.bidir == True:
+                results_file_name = "bidir_" + results_file_name
+
+            with open(results_file_name, 'a') as f:
                 fieldnames = ["cell", "distance_measure", "augment_data", "regularization_constant", "hidden_size", "max_length", "best_dev_accuracy", "dev_f1", "test_accuracy", "test_f1"]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
 
