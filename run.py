@@ -359,10 +359,11 @@ if __name__ == "__main__":
     with tf.Graph().as_default():
         print("Building model...")
         start = time.time()
-        if config.bidir == False:
-            model = SimilarityModel(helper, config, embeddings)
-        else:
-            model = BiSimilarity(helper, config, embeddings)
+        with tf.device('/gpu:2'):
+            if config.bidir == False:
+                model = SimilarityModel(helper, config, embeddings)
+            else:
+                model = BiSimilarity(helper, config, embeddings)
         print("took %.2f seconds" % (time.time() - start))
 
         init = tf.global_variables_initializer()
