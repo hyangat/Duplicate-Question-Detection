@@ -5,11 +5,9 @@ import numpy as np
 import sys, os, time, pickle
 import argparse
 import csv
-from bidir_similarity import BiSimilarity
+from bidirsimilarity import BiSimilarity
 from similarity import SimilarityModel
 from attention import Attention
-
-
 
 
 DATA_PATH = "../../raw_data/quora_datasets/tokenized/all.txt"
@@ -274,6 +272,7 @@ if __name__ == "__main__":
     parser.add_argument("-ml", "--max_length", type=int, required=False, help="maximum length of sentences")
     parser.add_argument("-s", "--save_params", action="store_true", help="save trained variables to a checkpoint file")
     parser.add_argument("-bi", "--bidir", action="store_true", help="save usage of bidirectional networks")
+    parser.add_argument("-at", "--attention", action="store_true", help="save usage of attention layer")
     args = parser.parse_args()
 
     config = Config()
@@ -295,54 +294,8 @@ if __name__ == "__main__":
         config.bidir = args.bidir
 
 
-
-
-    '''  
-    print("Preparing data...")
-    # helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
-    helper, train, test = test_time_load_and_preprocess_data(TRAIN_PATH, TEST_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
-
-    print("Load embeddings...")
-    embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
-    config.embed_size = embeddings.shape[1]
-
-    # append unknown word and padding word vectors
-    helper.add_additional_embeddings(embeddings)
-
-    with tf.Graph().as_default():
-        print("Building model...")
-        start = time.time()
-        if config.bidir == False:
-            model = SimilarityModel(helper, config, embeddings)
-        else:
-            model = BiSimilarity(helper, config, embeddings)
-        print("took %.2f seconds" % (time.time() - start))
-
-        print_options(args, config)
-
-        # init = tf.global_variables_initializer()
-        init = tf.initialize_all_variables()
-        saver = None
-        if config.save_params:
-
-            saver = tf.train.Saver()
-
-        sess_config = tf.ConfigProto(allow_soft_placement=True)
-        sess_config.gpu_options.allow_growth = True
-        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.01
-
-        # start a TensorFlow session, initialize all variables, then run model
-        with tf.Session(config=sess_config) as session:
-            session.run(init)
-
-            model.test_time_fit(session, saver, train)
-            model.test_time_predict(session, test)
-    '''
-
-
     accuracy_results = []
     f1_results = []
-
 
 
     print("Preparing data...")
@@ -364,10 +317,19 @@ if __name__ == "__main__":
                 model = SimilarityModel(helper, config, embeddings)
             else:
                 model = BiSimilarity(helper, config, embeddings)
+                
         print("took %.2f seconds" % (time.time() - start))
 
         init = tf.global_variables_initializer()
         saver = None
+
+        if config.save_params:
+            saver = tf.train.Saver()
+
+        # sess_config = tf.ConfigProto(allow_soft_placement=True)
+        # sess_config.gpu_options.allow_growth = True
+        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.01
+        # session_config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.2))
 
         with tf.Session() as session:
             session.run(init)
@@ -397,192 +359,47 @@ if __name__ == "__main__":
                 }  
                 writer.writerow(hyperparams_and_results_dict)
     
-
-
-
-    #
-    #
-    #             best_accuracy, best_f1 = model.fit(session, saver, train, dev)
-    #
-    #         accuracy_results.append((hs, best_accuracy))
-    #         f1_results.append((hs, best_f1))
-    #
-    #         print("best accuracy: %f, f1: %f" % (best_accuracy, best_f1))
-    #
-    # print("accuracy results:")
-    # print(accuracy_results)
-    # print("f1 results:")
-    # print(f1_results)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    '''
-    print("Preparing data...")
-    helper, train, test = test_time_load_and_preprocess_data(DATA_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
-
-    print("Load embeddings...")
-    embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
-    config.embed_size = embeddings.shape[1]
-
-    # append unknown word and padding word vectors
-    helper.add_additional_embeddings(embeddings)
-
-    with tf.Graph().as_default():
-        print("Building model...")
-        start = time.time()
-
-        if config.bidir == False:
-            model = SimilarityModel(helper, config, embeddings)
-        else:
-            model = BiSimilarity(helper, config, embeddings)
-
-        print("took %.2f seconds" % (time.time() - start))
-
-        print_options(args, config)
-
-        # init = tf.global_variables_initializer()
-        init = tf.initialize_all_variables()
-        saver = None
-        if config.save_params:
-            saver = tf.train.Saver()
-
-        sess_config = tf.ConfigProto(allow_soft_placement=True)
-        sess_config.gpu_options.allow_growth = True
-        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.01
-
-        # start a TensorFlow session, initialize all variables, then run model
-        with tf.Session(config=sess_config) as session:
-            session.run(init)
-
-            model.test_time_fit(session, saver, train)
-            model.test_time_predict(session, test)
-
-
-
-
-
-    for hs in (300, 350):
-
-        print("hidden size is %d" % hs)
-        config.hidden_size = hs
-
-        print("Preparing data...")
-        helper, train, dev, test = load_and_preprocess_data(DATA_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
-        # helper.max_length = config.max_length
-
-        print("Load embeddings...")
-        embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
-        config.embed_size = embeddings.shape[1]
-
-        # append unknown word and padding word vectors
-        helper.add_additional_embeddings(embeddings)
-
-        with tf.Graph().as_default():
-            print("Building model...")
-            start = time.time()
-            if config.bidir == False:
-                model = SimilarityModel(helper, config, embeddings)
-                print("Use bidir")
-            else:
-                model = BiSimilarity(helper, config, embeddings)
-                print("Didn't use bidir")
-            print("took %.2f seconds" % (time.time() - start))
-
-            init = tf.global_variables_initializer()
-            saver = None
-
-            with tf.Session() as session:
-                session.run(init)
-
-                best_dev_accuracy, dev_f1, test_accuracy, test_f1 = model.fit(session, saver, train, dev, test)
-                print("best dev accuracy: %f, dev f1: %f, test accuracy: %f, test f1: %f" % (best_dev_accuracy, dev_f1, test_accuracy, test_f1))
-
-	    with open("../../results/model_results.csv", 'a') as f:
-		fieldnames = ["cell", "distance_measure", "augment_data", "bidir", "regularization_constant", "hidden_size", \
-		    "max_length", "best_dev_accuracy", "dev_f1", "test_accuracy", "test_f1"]
-		writer = csv.DictWriter(f, fieldnames=fieldnames)
-
-		hyperparams_and_results_dict = {
-		    "cell": config.cell,
-		    "distance_measure": config.distance_measure,
-		    "augment_data": config.augment_data,
-		    "bidir": config.bidir,
-		    "regularization_constant": config.regularization_constant,
-		    "hidden_size": config.hidden_size,
-		    "max_length": config.max_length,
-		    "best_dev_accuracy": best_dev_accuracy,
-		    "dev_f1": dev_f1,
-		    "test_accuracy": test_accuracy,
-		    "test_f1": test_f1
-		}
-		writer.writerow(hyperparams_and_results_dict)
-
-
-
-    accuracy_results = []
-    f1_results = []
-            accuracy_results.append((hs, best_accuracy))
-            f1_results.append((hs, best_f1))
-
-            print("best accuracy: %f, f1: %f" % (best_accuracy, best_f1))
-
+            accuracy_results.append((config.bidir, config.use_attention, best_accuracy))
+            f1_results.append((config.bidir, config.use_attention, best_f1))
+            print("best accuracy: %f, f1: %f" % (config.bidir, config.use_attention, best_accuracy, best_f1))
     print("accuracy results:")
     print(accuracy_results)
     print("f1 results:")
     print(f1_results)
 
+
+    '''  
+    print("Preparing data...")
+    # helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
+    helper, train, test = test_time_load_and_preprocess_data(TRAIN_PATH, TEST_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
+    print("Load embeddings...")
+    embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
+    config.embed_size = embeddings.shape[1]
+    # append unknown word and padding word vectors
+    helper.add_additional_embeddings(embeddings)
+    with tf.Graph().as_default():
+        print("Building model...")
+        start = time.time()
+        if config.bidir == False:
+            model = SimilarityModel(helper, config, embeddings)
+        else:
+            model = BiSimilarity(helper, config, embeddings)
+        print("took %.2f seconds" % (time.time() - start))
+        print_options(args, config)
+        # init = tf.global_variables_initializer()
+        init = tf.initialize_all_variables()
+        saver = None
+        
+        
+        if config.save_params:
+            saver = tf.train.Saver()
+            
+        sess_config = tf.ConfigProto(allow_soft_placement=True)
+        sess_config.gpu_options.allow_growth = True
+        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.01
+        # start a TensorFlow session, initialize all variables, then run model
+        with tf.Session(config=sess_config) as session:
+            session.run(init)
+            model.test_time_fit(session, saver, train)
+            model.test_time_predict(session, test)
     '''
